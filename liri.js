@@ -1,16 +1,17 @@
 //Globals
 require("dotenv").config();
 var axios = require("axios");
-var key = require("./keys.js");
+var keys = require("./keys.js");
 var moment = require("moment");
-var spotify = require("node-spotify-api");
-var spotKeys = require("keys.spotify");
+var Spotify = require("node-spotify-api");
+var spotify = new Spotify("keys.spotify");
 var fs = require("fs");
 var inquirer = require("inquirer");
 var args = process.argv;
 var action = args[2];
 var target = args[3];
 var today = "\n Event happened at: " + moment().format("LLL");
+var omdbId = keys.omdb.id;
 
 // MAIN PICKER FUNCTION
 function picker(action, target) {
@@ -37,58 +38,6 @@ function picker(action, target) {
     }
 };
 
-// CONCERTS FUNCTION
-function concertthis(artistName) {
-    // * Returns the following from Bands in Town Artist Events API
-    // * Name of the venue
-    // * Venue location
-    // * Date of the Event (use moment to format this as "MM/DD/YYYY")
-
-    if (!artistName) {
-        text += "\nNo artist specified... but Tool is on tour";
-        artistName = "Tool";
-    }
-    text += "\nSearching Bands In Town for upcoming " + artistName + " concerts\n";
-
-    var queryURL = "https://rest.bandsintown.com/artists/" + artistName + "/events?app_id=codingbootcamp";
-    // console.log(queryURL);
-    // make axios request to bandsintown api
-    axios
-        .get(queryURL)
-        .then(function (response) {
-            var artistInfo = response.data
-            var concert;
-
-            for (concert in artistInfo) {
-                var dates = artistInfo[concert].datetime.split("T");
-                var concertDate = moment(dates[0]).format('LL')
-                var venue = artistInfo[concert].venue;
-                // build text to print log and console.log
-                text += "=====================";
-                text += "\n" + concertDate;
-                text += "\n" + venue.name;
-                text += "\n" + venue.city + " " + venue.region + " " + venue.country;
-                text += "\n=====================\n";
-            }
-            text += "\n";
-            console.log(text);
-            updateLog(text);
-        })
-
-        // error handling
-        .catch(function (error) {
-            if (error.response) {
-                console.log(error.response.data);
-                console.log(error.response.status);
-                console.log(error.response.headers);
-            } else if (error.request) {
-                console.log(error.request);
-            } else {
-                console.log("Error", error.message);
-            }
-            console.log(error.config);
-        });
-};
 
 // SONGS FUNCTION
 function spotifythissong(songName) {
@@ -100,7 +49,7 @@ function spotifythissong(songName) {
 
     if (!songName) {
         text += "\nNo song specified... enjoy some Ace of Base";
-        songName = "The Sign"
+        songName = "Eternal Refuge"
     }
 
     text += "\nSearching Spotify for: " + songName + "\n";
@@ -131,61 +80,6 @@ function spotifythissong(songName) {
         });
 };
 
-// MOVIES FUNCTION
-function moviethis(movieName) {
-
-    //     * Returns the following from the OMDB API
-    //     * Title of the movie.
-    //     * Year the movie came out.
-    //     * IMDB Rating of the movie.
-    //     * Rotten Tomatoes Rating of the movie.
-    //     * Country where the movie was produced.
-    //     * Language of the movie.
-    //     * Plot of the movie.
-    //     * Actors in the movie.
-
-    if (!movieName) {
-        text += "\nNo movie specified... You're getting a Jared Leto movie instead.";
-        movieName = "Mr. Nobody"
-    }
-    text += "\nSearching OMDB for: " + movieName + "\n";
-
-    var queryURL = "http://www.omdbapi.com/?t=" + movieName + "&y=&plot=short&apikey=trilogy";
-
-    axios
-        .get(queryURL)
-        .then(function (response) {
-            var movie = response.data
-
-            text += "==================";
-            text += "\nMovie: " + movie.Title;
-            text += "\nYear: " + movie.Year;
-            text += "\nActors: " + movie.Actors;
-            text += "\n" + movie.Ratings[0].Source + " rating: " + movie.Ratings[0].Value;
-            text += "\n" + movie.Ratings[1].Source + " rating: " + movie.Ratings[1].Value;
-            text += "\nCountry: " + movie.Country;
-            text += "\nLanguage: " + movie.Language;
-            text += "\nPlot: " + movie.Plot;
-            text += "\n==================\n";
-
-            console.log(text);
-            updateLog(text);
-        })
-
-        // error handling
-        .catch(function (error) {
-            if (error.response) {
-                console.log(error.response.data);
-                console.log(error.response.status);
-                console.log(error.response.headers);
-            } else if (error.request) {
-                console.log(error.request);
-            } else {
-                console.log("Error", error.message);
-            }
-            console.log(error.config);
-        });
-};
 
 // RANDOM FUNCTION
 function dowhatitsays() {
