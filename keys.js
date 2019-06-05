@@ -4,5 +4,9 @@ exports.spotify = {
   };
 
 exports.omdb = {
-  id: process.env.omdb
+  id: process.env.OMDB_ID
+};
+
+exports.concert = {
+  id: process.env.CONCERT_ID
 };

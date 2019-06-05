@@ -1,159 +1,79 @@
-//Globals
 require("dotenv").config();
-var axios = require("axios");
-var keys = require("./keys.js");
-var moment = require("moment");
-var Spotify = require("node-spotify-api");
-var spotify = new Spotify("keys.spotify");
+
 var fs = require("fs");
-var inquirer = require("inquirer");
-var args = process.argv;
-var action = args[2];
-var target = args[3];
-var today = "\n Event happened at: " + moment().format("LLL");
-var omdbId = keys.omdb.id;
+var keys = require("./keys.js");
 
-// MAIN PICKER FUNCTION
-function picker(action, target) {
-    switch (action) {
-        case "concert-this":
-            concertthis(target);
-            break;
+var Spotify = require('node-spotify-api');
+var spotify = new Spotify(keys.spotify);
 
-        case "spotify-this-song":
-            spotifythissong(target);
-            break;
+var ConcertThis = require('./concert-this');
+var concert_this = new ConcertThis();
 
-        case "movie-this":
-            moviethis(target);
-            break;
+var MovieThis = require('./movie-this');
+var movie_this = new MovieThis();
 
-        case "do-what-it-says":
-            dowhatitsays();
-            break;
+// Grab search command line argument
+var argSearch = process.argv[2];
+// Joining the remaining arguments since the query may contain spaces
+var argTerm = process.argv.slice(3).join(' ');
 
-        default:
-            console.log("Hmmm ... I don't understand.");
-            break;
-    }
-};
+function handleSearches(search,term){
+    if (search === 'concert-this') {
+        if(!term) return;
+        console.log('\n -----------------------------------------------');
+        console.log(' ~Searching for "' + term + '" from Bands in Town~');
+        console.log(' -----------------------------------------------');
+        concert_this.search(term);
 
-
-// SONGS FUNCTION
-function spotifythissong(songName) {
-    // * Returns the following from the Spotify API
-    // * Artist(s)
-    // * The song's name
-    // * A preview link of the song from Spotify
-    // * The album that the song is from
-
-    if (!songName) {
-        text += "\nNo song specified... enjoy some Ace of Base";
-        songName = "Eternal Refuge"
-    }
-
-    text += "\nSearching Spotify for: " + songName + "\n";
-
-    spotify
-        .search({ type: 'track', query: songName })
-        .then(function (response) {
-            // This is where the magic happens            
-            var albums = response.tracks.items;
-            var i;
-            for (i in albums) {
-                // console.log(albums[i]);
-                var info = albums[i];
-                text += "==================";
-                text += "\nArtist: " + info.artists[0].name;
-                text += "\nSong: " + info.name;
-                text += "\nAlbum: " + info.album.name;
-                text += "\nPreview: " + info.preview_url;
-                text += "\nFull album: " + info.external_urls.spotify;
-                text += "\n==================\n";
-            }
-            text += "\n";
-            console.log(text);
-            updateLog(text);
-        })
-        .catch(function (err) {
-            console.log(err);
-        });
-};
-
-
-// RANDOM FUNCTION
-function dowhatitsays() {
-    console.log("Do what it says in random.txt...\n");
-    fs.readFile("random.txt", "utf8", function (error, data) {
-
-        // error handling
-        if (error) {
-            return console.log(error);
-        }
-
-        // separate out the action and target from the info in random, run picker
-        var args = data.split(", ");
-        picker(args[0], args[1])
-    })
-};
-
-function updateLog(text) {
-    fs.appendFile("log.txt", text, function (err) {
-        if (err) {
-            console.log(err);
-        }
-        else {
+    } else if(search === 'spotify-this-song'){
+        if(!term) term = "The Sign";
+        console.log('\n -----------------------------------------------');
+        console.log(' ~Searching for "' + term + '" in Spotify~');
+        console.log(' -----------------------------------------------');
+        spotify.search({ type: 'track', query: term })
+        .then(function(response) {
+        if(!response.tracks.items.length){
+            console.log("Song not found!");
+            console.log(' -----------------------------------------------');
             return;
         }
-    });
-};
-
-function inquire() {
-    inquirer.prompt([
-        {
-            name: "action",
-            message: "What would you like to search for?",
-            type: "list",
-            choices: ["Concerts", "Songs", "Movies", "Surprise me"]
+        var artists = response.tracks.items[0].album.artists;
+        var songName = response.tracks.items[0].name;
+        var songLink = response.tracks.items[0].external_urls.spotify;
+        var albumName = response.tracks.items[0].album.name;
+        var artistText = "Artist(s): \t[ ";
+        var songNameText = "Song name: \t[ " + songName + " ]\n";
+        var songLinkText = "Song link: \t[ " + songLink + " ]\n";
+        var albumNameText = "Album name: \t[ " + albumName + " ]\n";
+        for(var i = 0; i < artists.length;i++){
+            if(i<=artists.length-2)
+                artistText += artists[i].name + " ] [ ";
+            else
+                artistText += artists[i].name + " ]\n";
         }
-    ]).then(function (firstAnswer) {
-        var action = firstAnswer.action;
-        if (action === "Surprise me") {
-            picker("do-what-it-says")
-        } else {
-            inquirer.prompt([
-                {
-                    name: "target",
-                    message: "Enter a band, song or movie name."
-                }
-            ]).then(function (secondAnswer) {
-                var target = secondAnswer.target;
-                switch (action) {
-                    case "Concerts":
-                        picker("concert-this", target);
-                        break;
-                    case "Songs":
-                        picker("spotify-this-song", target);
-                        break;
-                    case "Movies":
-                        picker("movie-this", target);
-                        break;
-                    default:
-                        break;
-                };
-            });
-        };
+        console.log(artistText + songNameText + songLinkText + albumNameText);
+        })
+        .catch(function(err) {
+        console.log(err);
+        });
 
-    });
-};
+    } else if(search === 'movie-this'){
+        if(!term) term = "Hackers";
+        console.log('\n -----------------------------------------------');
+        console.log('\t~Searching for "' + term + '" in OMDB~');
+        console.log(' -----------------------------------------------');
+        movie_this.search(term);
 
-// START APPLICATION
-// Can be run with arguments from command line, or through prompted input from inquirer
-function initLiri() {
-    if (action) {
-        picker(action, target);
-    } else {
-        inquire();
-    };
+    } else if(search === 'do-what-it-says'){
+        fs.readFile('./random.txt', 'utf-8',(err, data) => {
+            if (err) throw err;
+            var tempArgs = data.split(',"');
+            handleSearches(tempArgs[0],
+                            tempArgs[1]
+                            .trim()
+                            .replace('"',''));
+        });
+    }
 }
-initLiri();
+
+handleSearches(argSearch,argTerm);
