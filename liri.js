@@ -6,10 +6,10 @@ var keys = require("./keys.js");
 var Spotify = require('node-spotify-api');
 var spotify = new Spotify(keys.spotify);
 
-var ConcertThis = require('./concert-this');
+var ConcertThis = require('./concert_this.js');
 var concert_this = new ConcertThis();
 
-var MovieThis = require('./movie-this');
+var MovieThis = require('./movie_this.js');
 var movie_this = new MovieThis();
 
 // Grab search command line argument
@@ -26,7 +26,7 @@ function handleSearches(search,term){
         concert_this.search(term);
 
     } else if(search === 'spotify-this-song'){
-        if(!term) term = "The Sign";
+        if(!term) term = "Vicer Exciser";
         console.log('\n -----------------------------------------------');
         console.log(' ~Searching for "' + term + '" in Spotify~');
         console.log(' -----------------------------------------------');
